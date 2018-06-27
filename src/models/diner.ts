@@ -9,4 +9,10 @@ export default class Diner{
     getID() : number{
         return this.dinerID;
     }
+
+    static clone( diner : Diner ) : Diner {
+        let dinerClone = new Diner( diner.name, diner.amount );
+        dinerClone.dinerID = diner.getID();
+        return dinerClone;
+    }
 }

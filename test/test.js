@@ -15,18 +15,30 @@ describe("Test Bill", () => {
     it("Should have a list of bill items", () => {
         _assert(Array.isArray(bill.getItems()));
     });
+});
 
-    var newDiner = new Diner("NewDiner");
-    it("Should be able to add diners", () => {
+describe("Test Bill Functions", () => {
+    var bill = null;
+    it("Should be able to instantiate a new bill", () => {
+        bill = new Bill();
+        _assert(bill);
+    });
+
+    var diner = new Diner("TestDiner");
+    it("Should be able to add a new Diner", () => {
         var dinerListLength = bill.getDiners().length;
-        bill.addDiner(newDiner);
+        bill.addDiner(diner);
         var dinerList = bill.getDiners();
         _assert(dinerList.length === dinerListLength + 1);
-        _assert(dinerList.filter(item => item.getID() === newDiner.getID()).length === 1);
-        var diner = bill.getDinerByID(newDiner.getID());
-        _assert(diner);
-        _assert(diner.getID() === newDiner.getID() && diner.name === newDiner.name);
+        _assert(dinerList.filter(item => item.getID() === diner.getID()).length === 1);
+        var retrieved  = bill.getDinerByID(diner.getID());
+        _assert(retrieved);
+        _assert(diner.getID() === retrieved.getID() && diner.name === retrieved.name);
     });
+
+    var dinerItems = [];
+    var dinerAmount = null;
+    var billTotal = null;
 
     var newItem = new BillItem("NewItem", 10.00);
     it("Should be able to add items", () => {
@@ -38,25 +50,9 @@ describe("Test Bill", () => {
         var item = bill.getItemByID(newItem.getID());
         _assert(item);
         _assert(item.getID() === newItem.getID() && item.description === newItem.description);
-    });
-});
-
-describe("Test Bill Functions", () => {
-    var bill = null;
-    it("Should be able to instantiate a new bill", () => {
-        bill = new Bill();
-        _assert(bill);
+        dinerItems.push(newItem);
     });
 
-
-    var diner = new Diner("TestDiner");
-    it("Should be able to add a new Diner", () => {
-        bill.addDiner(diner);
-    });
-
-    var dinerItems = [];
-    var dinerAmount = null;
-    var billTotal = null;
     it("Should be able to add new Bill Items", () => {
         for (var i = 0; i < 8; i++) {
             var billItem = new BillItem("Item " + i, (Math.random() * 10));
