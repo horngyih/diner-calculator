@@ -1,0 +1,19 @@
+{
+  "name": "diner-calculator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "clean" : "rm -rf dist",
+    "compile" : "npm run clean && tsc",
+    "test": "npm run compile && mocha"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/mocha": "^5.2.3",
+    "@types/node": "^10.3.5",
+    "mocha": "^5.2.0"
+  }
+}
