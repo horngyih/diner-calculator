@@ -6,14 +6,20 @@
   "scripts": {
     "clean": "rm -rf dist",
     "compile": "npm run clean && tsc",
-    "test": "npm run compile && mocha"
+    "cli": "npm run compile && node dist/commandline.js",
+    "test": "mocha -r ts-node/register test/**/*.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/es6-promise": "^3.3.0",
     "@types/mocha": "^5.2.3",
     "@types/node": "^10.3.6",
-    "mocha": "^5.2.0"
+    "mocha": "^5.2.0",
+    "ts-node": "^7.0.0"
+  },
+  "dependencies": {
+    "typescript": "^2.9.2"
   }
 }
