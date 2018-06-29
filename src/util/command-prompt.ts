@@ -1,10 +1,9 @@
 import { createInterface } from "readline";
-import { resolve } from "path";
 import Bill from "../models/bill";
 import Diner from "../models/diner";
 import BillItem from "../models/billitem";
 
-const INPUT_TOKEN_PATTERN = /[-0-9.]+|".+"|'.+'|\w+/g;
+const INPUT_TOKEN_PATTERN = /\/?[-0-9.]+|".+"|'.+'|\w+/g;
 
 export default class CommandPrompt{
 
@@ -18,19 +17,36 @@ export default class CommandPrompt{
     init(){
         this.actionMap = {};
         this.actionMap['newbill'] = this.newBill.bind(this);
+        this.actionMap['nb'] = this.newBill.bind(this);
+
         this.actionMap['showbill'] = this.showBill.bind(this);
+        this.actionMap['sb'] = this.showBill.bind(this);
 
         this.actionMap['adddiner'] = this.addDiner.bind(this);
+        this.actionMap['diner'] = this.addDiner.bind(this);
+
         this.actionMap['listdiners'] = this.listDiners.bind(this);
+        this.actionMap['diners'] = this.listDiners.bind(this);
 
         this.actionMap['additem'] = this.addItem.bind(this);
+        this.actionMap['item'] = this.addItem.bind(this);
+
         this.actionMap['listitems'] = this.listItems.bind(this);
+        this.actionMap['items'] = this.listItems.bind(this);
+
+        this.actionMap['listUnassigned'] = this.listUnassigned.bind(this);
+        this.actionMap['unassigned'] = this.listUnassigned.bind(this);
+        this.actionMap['ua'] = this.listUnassigned.bind(this);
 
         this.actionMap['billtotal'] = this.billTotal.bind(this);
+        this.actionMap['tt'] = this.billTotal.bind(this);
 
         this.actionMap['assign'] = this.assignOwner.bind(this);
+        this.actionMap['a'] = this.assignOwner.bind(this);
 
         this.actionMap['finalize'] = this.finalize.bind(this);
+        this.actionMap['closebill'] = this.finalize.bind(this);
+        this.actionMap['c'] = this.finalize.bind(this);
     }
 
     start(){
@@ -46,13 +62,23 @@ export default class CommandPrompt{
 
     handleLine( line ){
         if( line.trim() !== "exit" ){
-            this.parse(line)
-            .then(this.interpret.bind(this))
-            .then((response)=>console.log( ">>" + response))
-            .catch((err)=>console.log(">>"+err));
+            let cmds = line.split(";");
+            let executions = cmds.filter(cmd=>cmd.trim().length !==0 ).map(cmd=>this.exec(cmd));
+            Promise.all(executions)
+            .then(responses=>responses.forEach(response=>console.log(">> " + response )))
+            .catch(error=>console.log("ERROR :" + error));
         } else {
             process.exit(0);
         }
+    }
+
+    exec( line : string ){
+        return new Promise((resolve, reject)=>{
+            this.parse(line)
+            .then(this.interpret.bind(this))
+            .then(response=>resolve(response))
+            .catch(err=>reject(err));
+        });
     }
 
     parse( command:string ) : Promise<string[]>{
@@ -91,21 +117,26 @@ export default class CommandPrompt{
             if( args.length <= 0 ){
                 return "addDiner <Diner Name>";
             }
-            response += "New Diner ";
-            let dinerName = (args.length > 0 )? args[0] : "";
-            if( dinerName ){
-                let existingDiner = this.bill.getDiners().filter((diner)=>diner.name === dinerName );
-                if( existingDiner.length === 0 ){
-                    this.bill.addDiner( new Diner(dinerName) );
-                    response += "added";
-                } else {
-                    response += `\n Diner with the name ${dinerName} already exists`;
-                }
-            } else {
-                response += "\n Please specify diner name";
-            }
+            let responses = args.map(dinerName=>this.addNewDiner(dinerName));
+            return responses.join("\n>>");
         } else {
             response += "No bill created yet";
+        }
+        return response;
+    }
+
+    protected addNewDiner( dinerName : string ) : string{
+        let response = "New Diner ";
+        if( dinerName ){
+            let existingDiner = this.bill.getDiners().filter((diner)=>diner.name === dinerName );
+            if( existingDiner.length === 0 ){
+                this.bill.addDiner( new Diner(dinerName) );
+                response += "added";
+            } else {
+                response += `\n Diner with the name ${dinerName} already exists`;
+            }
+        } else {
+            response += "\n Please specify diner name";
         }
         return response;
     }
@@ -123,12 +154,17 @@ export default class CommandPrompt{
             if( args.length <= 0 ){
                 return "addItem <Item Description> <Item Price> [ <Item Quantity> ]";
             }
-            let itemDesc = (args.length>0)? args[0] : null;
-            let itemPrice : any = (args.length>1)? args[1] : null;
-            let itemQty : any = (args.length>2)? args[2] : 1;
+            let itemDesc = this.formatDescription( (args.length>0)? args[0].trim() : null );
+            let itemPrice : any = (args.length>1)? args[1].trim() : null;
+            let itemQty : any = (args.length>2)? args[2].trim() : 1;
             if( itemDesc ){
                 if( itemPrice ){
+                    let dividePrice : boolean = false;
                     try{
+                        if( itemQty[0] === '/' ){
+                            dividePrice = true;
+                            itemQty = itemQty.substring(1);
+                        }
                         itemQty = parseInt(itemQty);
                         if( itemQty < 0 ){
                             itemQty = 1;
@@ -139,6 +175,9 @@ export default class CommandPrompt{
 
                     try{
                         itemPrice = parseFloat(itemPrice);
+                        if( dividePrice ){
+                            itemPrice = itemPrice / itemQty;
+                        }
                     } catch( err ){
                         return "Invalid price - " + itemPrice;
                     }
@@ -160,14 +199,22 @@ export default class CommandPrompt{
         }
     }
 
-    protected listItems() : string{
+    protected getItems( filter : (string)=>boolean = (item)=>true ) : string{
         if( this.bill ){
             let response = "Current items :\n";
-            this.bill.getItems().forEach((item, index)=> response += `${index}:${item.description} - ${item.price} - ${this.getDinerName(item.owner)}\n`);
+            this.bill.getItems().filter(filter).forEach((item, index)=> response += `${index}:${item.description} - ${item.price} - ${this.getDinerName(item.owner)}\n`);
             return response;
         } else {
             return "No bill created yet";
         }
+    }
+
+    protected listItems() : string {
+        return this.getItems();
+    }
+
+    protected listUnassigned() : string {
+        return this.getItems( (item)=>item.owner === this.bill.getShared().getID() );
     }
 
     protected assignOwner( args : string[] ) : string{
@@ -260,6 +307,14 @@ export default class CommandPrompt{
             }
         }
         return "";
+    }
+
+    protected formatDescription( desc : string ) : string{
+        if( desc ){
+            return desc.replace( /_/g, " " ).split(" ").map(word=>word.charAt(0).toUpperCase() + word.substring(1)).join(" " );
+        } else {
+            return desc;
+        }
     }
 
     static printDiners( diners : Diner[] ) : string{
