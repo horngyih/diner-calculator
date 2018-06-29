@@ -10,4 +10,14 @@ export default class BillItem{
     getID() : number {
         return this.billItemID;
     }
+
+    static clone( billItem : BillItem ){
+        if(billItem){
+            let result = new BillItem(billItem.description, billItem.price, billItem.owner);
+            result.billItemID = billItem.getID();            
+            return result;
+        } else {
+            return null;
+        }
+    }
 }
