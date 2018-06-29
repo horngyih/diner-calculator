@@ -12,6 +12,10 @@ export default class Bill {
         this.items = [];
     }
 
+    getShared() : Diner{
+        return this.shared;
+    }
+
     getDiners() : Diner[]{
         return [this.shared].concat(this.diners);
     }
