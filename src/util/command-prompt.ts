@@ -7,7 +7,9 @@ const INPUT_TOKEN_PATTERN = /\/?[-0-9.]+|".+"|'.+'|\w+/g;
 
 export default class CommandPrompt{
 
+    protected aliasMap;
     protected actionMap;
+    protected documentationMap;
     protected bill : Bill;
 
     constructor( public promptCharacter : string = ">" ){
@@ -15,38 +17,140 @@ export default class CommandPrompt{
     }
 
     init(){
+        this.initAction();
+    }
+
+    initAction(){
+        this.aliasMap = {};
         this.actionMap = {};
-        this.actionMap['newbill'] = this.newBill.bind(this);
-        this.actionMap['nb'] = this.newBill.bind(this);
+        this.documentationMap = {};
 
-        this.actionMap['showbill'] = this.showBill.bind(this);
-        this.actionMap['sb'] = this.showBill.bind(this);
+        let newBillCommand = 'newbill';
+        let newBillAction = this.newBill.bind(this);
+        let newBillDoc = 'Create a new bill; this will drop any existing bill details';
+        this.addAction( newBillCommand, newBillAction, newBillDoc, ['nb']);
 
-        this.actionMap['adddiner'] = this.addDiner.bind(this);
-        this.actionMap['diner'] = this.addDiner.bind(this);
+        let showBillCommand = 'showBill';
+        let showBillAction = this.showBill.bind(this);
+        let showBillDoc = 'Show bill details';
+        this.addAction( showBillCommand, showBillAction, showBillDoc, ['sb'] );
 
-        this.actionMap['listdiners'] = this.listDiners.bind(this);
-        this.actionMap['diners'] = this.listDiners.bind(this);
+        let addDinerCommand = 'adddiner';
+        let addDinerAction = this.addDiner.bind(this);
+        let addDinerDoc = 
+        `Add a new diner; diner name must be unique
+        addDiner <dinerName>
+        `;
+        this.addAction( addDinerCommand, addDinerAction, addDinerDoc, ['diner', 'd']);
 
-        this.actionMap['additem'] = this.addItem.bind(this);
-        this.actionMap['item'] = this.addItem.bind(this);
+        let listDinersCommand = 'listDiners';
+        let listDinersAction = this.listDiners.bind(this);
+        let listDinersDoc = 'List current bill\'s diners';
+        this.addAction( listDinersCommand, listDinersAction, listDinersDoc, ['diners', 'ld' ] );
 
-        this.actionMap['listitems'] = this.listItems.bind(this);
-        this.actionMap['items'] = this.listItems.bind(this);
+        let removeDinerCommand = 'removeDiner';
+        let removeDinerAction = ()=> "Not implemented";
+        let removeDinersDoc = 
+        `Remove diner from bill
+        removeDiner <dinerIndex>
+        `;
+        this.addAction( removeDinerCommand, removeDinerAction, removeDinersDoc, ['rd']);
+        
+        let addItemCommand = 'addItem';
+        let addItemAction = this.addItem.bind(this);
+        let addItemDoc = 
+        `Add a new bill item
+        addItem <ItemDesc> <ItemPrice> [ <Quantity> | '\'<DividedByQuantity> ]
+        - <ItemDesc> - Item description for the bill item
+        - <ItemPrice> - Item Price for the bill item
+        - <Quantity> - The number of items to be added to the bill (optional, def = 1 )
+        - <DividedByQuantity> - This indicates the Item Price is to be divided into this quantity`;
+        this.addAction( addItemCommand, addItemAction, addItemDoc, ['item', 'i']);
 
-        this.actionMap['listUnassigned'] = this.listUnassigned.bind(this);
-        this.actionMap['unassigned'] = this.listUnassigned.bind(this);
-        this.actionMap['ua'] = this.listUnassigned.bind(this);
+        let listItemCommand = 'listItems';
+        let listItemAction = this.listItems.bind(this);
+        let listItemDoc = 'List current bill items';
+        this.addAction( listItemCommand, listItemAction, listItemDoc, ['items', 'li'] );
 
-        this.actionMap['billtotal'] = this.billTotal.bind(this);
-        this.actionMap['tt'] = this.billTotal.bind(this);
+        let unassignedItemsCommand = 'listUnassigned';
+        let unassignedItemsAction = this.listUnassigned.bind(this);
+        let unassignedItemsDoc = 'List current bill items that are unassigned to any diners.';
+        this.addAction( unassignedItemsCommand, unassignedItemsAction, unassignedItemsDoc, ['unassigned','ua']);
 
-        this.actionMap['assign'] = this.assignOwner.bind(this);
-        this.actionMap['a'] = this.assignOwner.bind(this);
+        let billTotalCommand = 'billTotal';
+        let billTotalAction = this.billTotal.bind(this);
+        let billTotalDoc = 'Show the current bill\s total';
+        this.addAction( billTotalCommand, billTotalAction, billTotalDoc, ['tt']);
 
-        this.actionMap['finalize'] = this.finalize.bind(this);
-        this.actionMap['closebill'] = this.finalize.bind(this);
-        this.actionMap['c'] = this.finalize.bind(this);
+        let assignItemCommand = 'assign';
+        let assignItemAction = this.assignOwner.bind(this);
+        let assignItemDoc = 
+        `Assign the specified bill item to a diner
+assign <ItemIndex> <DinerIndex>
+- <ItemIndex> Index of the item to be assigned,
+- <DinerIndex> Index of the diner the item to be assigned to.`;
+        this.addAction( assignItemCommand, assignItemAction, assignItemDoc, ['a'] );
+
+        let finalizeBillCommand = 'finalize';
+        let finalizeBillAction = this.finalize.bind(this);
+        let finalizeBillDoc = 
+        `Finalize the bill, distribute shared amount and calculate individual diner's amount due.`;
+        this.addAction( finalizeBillCommand, finalizeBillAction, finalizeBillDoc, ['closebill', 'c', 'f'] );
+    }
+
+    createAlias( originalAction : string, alias : string ){
+        if( this.aliasMap[ alias ] ){
+            console.error( `Alias ${alias} already exists for ${this.aliasMap[alias]}` );
+        } else{
+            this.aliasMap[alias] = originalAction;
+        }
+    }
+
+    unalias( actionCommand : string ) : string|null{
+        actionCommand = actionCommand.toLowerCase();
+        if( this.aliasMap[actionCommand] ){
+            return this.aliasMap[actionCommand];
+        }
+        return actionCommand;
+    }
+
+    addAction( actionCommand : string, action : any, documentation? : string, aliases? : string|string[] ){
+        if( typeof action === "function" ){
+            actionCommand = actionCommand.toLowerCase();
+            this.actionMap[actionCommand] = action;
+            if( documentation ){
+                this.documentationMap[actionCommand] = documentation;
+            }
+
+            if( aliases ){
+                if( typeof aliases === "string" ){
+                    aliases = [ aliases ];
+                }
+                aliases.forEach( alias => this.createAlias( actionCommand, alias ) );
+            }
+        }
+    }
+
+    getAction( actionCommand : string ){
+        return this.actionMap[this.unalias(actionCommand)];
+    }
+
+    getDocumentation( actionCommand : string ){
+        return this.documentationMap[this.unalias(actionCommand)];
+    }
+
+    showDocumentation( actionCommand? : string ) : string{
+        let doc = "\n"
+        if( actionCommand ){
+            doc += this.getDocumentation(actionCommand);
+        } else {
+            doc += "Commands:\n";
+            let commands = Object.keys( this.actionMap );//.sort();
+            commands.push( "help" );
+            commands.push( "exit" );
+            doc += commands.join( ", ");
+        }
+        return doc;
     }
 
     start(){
@@ -102,11 +206,19 @@ export default class CommandPrompt{
 
     interpret( tokens : string[] ) : Promise<string>{
         return new Promise((resolve, reject)=>{
-            let action = this.actionMap[tokens[0].toLowerCase()];
-            if( action ){
-                resolve( action(tokens.slice(1)) );
+            if( tokens[0].toLowerCase() === 'help' ){
+                if( tokens.length > 1 ){
+                    resolve( this.showDocumentation(tokens[1]));
+                } else{ 
+                    resolve( this.showDocumentation() );
+                }
             } else {
-                resolve( "Unrecognized command : " + tokens[0] );
+                let action = this.getAction(tokens[0].toLowerCase());
+                if( action ){
+                    resolve( action(tokens.slice(1)) );
+                } else {
+                    resolve( "Unrecognized command : " + tokens[0] );
+                }
             }
         });
     }
