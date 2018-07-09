@@ -14,18 +14,13 @@ export default class CommandPrompt {
 
     protected aliasMap;
     protected actionMap;
-<<<<<<< HEAD
     protected documentationMap;
     protected bill : Bill;
-=======
-    protected bill: Bill;
->>>>>>> a1e0c211dbf565bcde9118ea20e8e5330e762a01
 
     constructor(public promptCharacter: string = ">") {
         this.init();
     }
 
-<<<<<<< HEAD
     init(){
         this.initAction();
     }
@@ -161,52 +156,6 @@ assign <ItemIndex> <DinerIndex>
             doc += commands.join( ", ");
         }
         return doc;
-=======
-    init() {
-        this.actionMap = {};
-        this.actionMap['newbill'] = this.newBill.bind(this);
-        this.actionMap['nb'] = this.newBill.bind(this);
-
-        let showBillAction = this.requireBill(this.showBill.bind(this));
-        this.actionMap['showbill'] = showBillAction;
-        this.actionMap['sb'] = showBillAction;
-
-        let addDinerAction = this.requireBill(this.addDiner.bind(this));
-        this.actionMap['adddiner'] = addDinerAction
-        this.actionMap['diner'] = addDinerAction;
-        this.actionMap['d'] = addDinerAction;
-
-        let listDinerAction = this.requireBill(this.listDiners.bind(this));
-        this.actionMap['listdiners'] = listDinerAction;
-        this.actionMap['diners'] = listDinerAction;
-
-        let addItemAction = this.requireBill(this.addItem.bind(this));
-        this.actionMap['additem'] = addItemAction;
-        this.actionMap['item'] = addItemAction;
-        this.actionMap['i'] = addItemAction;
-
-        let listItemsAction = this.requireBill(this.listItems.bind(this));
-        this.actionMap['listitems'] = listItemsAction;
-        this.actionMap['items'] = listItemsAction;
-
-        let listUnassignedAction = this.requireBill(this.listUnassigned.bind(this));
-        this.actionMap['listunassigned'] = listUnassignedAction;
-        this.actionMap['unassigned'] = listUnassignedAction;
-        this.actionMap['ua'] = listUnassignedAction;
-
-        let billTotalAction = this.requireBill(this.billTotal.bind(this));
-        this.actionMap['billtotal'] = billTotalAction;
-        this.actionMap['tt'] = billTotalAction;
-
-        let assignOwnerAction = this.requireBill(this.assignOwner.bind(this));
-        this.actionMap['assign'] = assignOwnerAction;
-        this.actionMap['a'] = assignOwnerAction;
-
-        let finalizeAction = this.requireBill(this.finalize.bind(this));
-        this.actionMap['finalize'] = finalizeAction;
-        this.actionMap['closebill'] = finalizeAction;
-        this.actionMap['c'] = finalizeAction;
->>>>>>> a1e0c211dbf565bcde9118ea20e8e5330e762a01
     }
 
     start() {
@@ -260,7 +209,6 @@ assign <ItemIndex> <DinerIndex>
         });
     }
 
-<<<<<<< HEAD
     interpret( tokens : string[] ) : Promise<string>{
         return new Promise((resolve, reject)=>{
             if( tokens[0].toLowerCase() === 'help' ){
@@ -276,15 +224,6 @@ assign <ItemIndex> <DinerIndex>
                 } else {
                     resolve( "Unrecognized command : " + tokens[0] );
                 }
-=======
-    interpret(tokens: string[]): Promise<string> {
-        return new Promise((resolve, reject) => {
-            let action = this.actionMap[tokens[0].toLowerCase()];
-            if (action) {
-                resolve(action(tokens.slice(1)));
-            } else {
-                resolve("Unrecognized command : " + tokens[0]);
->>>>>>> a1e0c211dbf565bcde9118ea20e8e5330e762a01
             }
         });
     }
