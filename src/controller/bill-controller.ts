@@ -47,11 +47,22 @@ export default class DefaultBillController implements BillController{
     }
 
     addDiner( diner : Diner ) : Diner{
+        if( diner ){
+            let existing = this.getDinerByName(diner.name) || this.getDinerByID(diner.getID());
+            if( !existing ){
+                this.bill.addDiner(diner);
+            } else {
+                throw "Diner already added to the bill";
+            }
+        }
         return diner;
     }
 
     removeDiner( diner : Diner ) : Diner{
-        return null;
+        if( diner ){
+            this.bill.removeDiner( diner );
+        }
+        return diner;
     }
 
     updateDiner( diner : Diner ) : Diner{
