@@ -7,6 +7,8 @@ export interface BillController {
     newBill(): Bill;
     closeBill(): Bill;
 
+    billTotal() : number;
+
     addDiner(diner: Diner): Diner;
     removeDiner(diner: Diner): Diner;
     updateDiner(diner: Diner): Diner;
@@ -45,6 +47,11 @@ export class DefaultBillController implements BillController {
         this.requireBill();
         this.bill.finalize();
         return this.bill;
+    }
+
+    billTotal() : number {
+        this.requireBill();
+        return this.bill.getBillTotal();
     }
 
     addDiner(diner: Diner): Diner {
